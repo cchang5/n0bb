@@ -9,6 +9,23 @@ import psycopg2 as psql
 import psycopg2.extras as psqle
 import password_file as pwd
 import matplotlib.pyplot as plt
+import yaml
+import tables
+plt.rc('text', usetex=True)
+
+if True:
+    plt.rcParams['text.latex.preamble'] = [
+        r'\usepackage{helvet}',
+        r'\usepackage{sansmath}',
+        r'\sansmath']
+
+ms = '3'
+cs = 3
+fs_l = 7
+fs_xy = 7
+ts = 7
+lw = 0.5
+plt_axes = [0.14,0.155,0.825,0.825]
 
 def params():
     # set up data set
@@ -16,7 +33,8 @@ def params():
     #p['ens'] = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828','l2464f211b600m00507m0507m628','l2464f211b600m0102m0509m635','l3248f211b580m00235m0647m831','l3264f211b600m00507m0507m628','l3296f211b630m0074m037m440','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628','l4896f211b630m00363m0363m430']
     p['ens'] = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828','l2464f211b600m00507m0507m628','l2464f211b600m0102m0509m635','l3264f211b600m00507m0507m628','l3296f211b630m0074m037m440','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628','l4896f211b630m00363m0363m430']
     p['fit_n'] = [1]
-    p['op'] = ['LR','S','V','LR_colormix','S_colormix']
+    #p['op'] = ['LR','S','V','LR_colormix','S_colormix']
+    p['op'] = ['V','LR','LR_colormix','S','S_colormix']
     #p['op'] = ['S']
     #p['op'] = ['V']
     # list priors
@@ -41,6 +59,9 @@ def params():
     p['prior']['c.S_colormix'] = [0.0, 10.0]
     p['prior']['a.S_colormix'] = [0.0, 10.0]
     p['prior']['m.S_colormix'] = [0.0, 10.0]
+    # read gV indices
+    gVidx = yaml.load(open('./params.yml'))
+    p['gVidx'] = dict(gVidx['ensembles'])
     return p
 
 def login(nerscusr,sqlusr,pwd):
@@ -64,6 +85,15 @@ def login(nerscusr,sqlusr,pwd):
         print "exiting"
         raise SystemExit
 
+def ens_translate(ens):
+    if ens in ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828','l3248f211b580m00235m0647m831']:
+        r = 'a15'
+    elif ens in ['l2464f211b600m0102m0509m635','l2464f211b600m00507m0507m628','l3264f211b600m00507m0507m628','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628']:
+        r = 'a12'
+    elif ens in ['l3296f211b630m0074m037m440','l4896f211b630m00363m0363m430','l6496f211b630m0012m0363m432']:
+        r = 'a09'
+    return r
+
 def read_data(cur,conn,params):
     ens_list = params['ens']
     fit_n = params['fit_n']
@@ -76,6 +106,10 @@ def read_data(cur,conn,params):
         sql_cmd = "SELECT aw0::double precision FROM callat_corr.hisq_params_bootstrap p JOIN callat_corr.hisq_ensembles e ON p.hisq_ensembles_id=e.id WHERE tag='%s' AND nbs=0;" %ens
         cur.execute(sql_cmd)
         aw0 = cur.fetchone()[0]
+        # get gV
+        sql_cmd = "SELECT (result->>'gV00')::double precision FROM callat_proj.ga_v1_bs gv JOIN callat_corr.hisq_bootstrap bs ON gv.bs_id=bs.id WHERE ga_v1_id=%s AND nbs=0;" %(params['gVidx'][ens]['idx']['fh'])
+        cur.execute(sql_cmd)
+        gV = cur.fetchone()[0]
         # get matrix element
         otemp = [] # temp ME
         etemp = [] # temp epi
@@ -86,14 +120,42 @@ def read_data(cur,conn,params):
             temp = cur.fetchall()
             etemp.append(np.array([i[0] for i in temp]))
             for o in op_list:
+                # get renorm coefficients
                 # get ME
                 sql_cmd = "SELECT result::double precision FROM callat_proj.n0bb_v1 WHERE hisq_ensembles='%s' AND operator='%s' and fit_n=%s ORDER BY nbs;" %(ens,o,n)
                 cur.execute(sql_cmd)
                 temp = cur.fetchall()
                 otemp.append(np.array([i[0]/(aw0**4) for i in temp])) # convert matrix element to w0 units
-                xlist.append({'tag':ens,'op':o,'n':n,'aw0':aw0})
+                xlist.append({'tag':ens,'op':o,'n':n,'aw0':aw0,'gV':gV})
+        # apply renorm here on otemp
+        # get mq
+        sql_cmd = "SELECT mval FROM callat_proj.project_ga_v1_boot0 WHERE id=%s;" %(params['gVidx'][ens]['idx']['fh'])
+        cur.execute(sql_cmd)
+        mq = cur.fetchone()[0].rstrip('0')
+        # get zmat
+        if ens in ['l2464f211b600m00507m0507m628', 'l4064f211b600m00507m0507m628']:
+            ens = 'l3264f211b600m00507m0507m628'
+        else: pass
+        if ens == 'l3296f211b630m0074m037m440':
+            stream = 'e'
+        else: stream = 'a'
+        ### renorm coeff from henry from hdf5
+        #zcoeff = tables.open_file('./interpolatedZ_V2.hdf5') 
+        #z4q = zcoeff.get_node('/fourQuark') 
+        #es = ens+stream
+        #zmat = z4q.read_where("(ensemble=='%s') & (fixVarValue=='%s')" %(es,mq))[0][1]
+        ### renorm coeff from david text files
+        dzmat = dict()
+        # step scale all
+        dzmat['a15'] = gv.gvar([['0.9407(63)','0(0)','0(0)','0(0)','0(0)'],['0(0)','0.9835(68)','-0.0106(18)','0(0)','0(0)'],['0(0)','-0.0369(30)','1.0519(80)','0(0)','0(0)'],['0(0)','0(0)','0(0)','1.020(11)','-0.0356(49)'],['0(0)','0(0)','0(0)','-0.0485(31)','0.9519(68)']])
+        dzmat['a12'] = gv.gvar([['0.9117(43)','0(0)','0(0)','0(0)','0(0)'],['0(0)','0.9535(48)','-0.0130(17)','0(0)','0(0)'],['0(0)','-0.0284(30)','0.9922(60)','0(0)','0(0)'],['0(0)','0(0)','0(0)','0.9656(96)','-0.0275(49)'],['0(0)','0(0)','0(0)','-0.0360(28)','0.9270(50)']])
+        dzmat['a09'] = gv.gvar([['0.9017(39)','0(0)','0(0)','0(0)','0(0)'],['0(0)','0.9483(44)','-0.0269(17)','0(0)','0(0)'],['0(0)','-0.0236(29)','0.9369(54)','0(0)','0(0)'],['0(0)','0(0)','0(0)','0.9209(91)','-0.0224(49)'],['0(0)','0(0)','0(0)','-0.0230(28)','0.9332(47)']])
+        zmat = dzmat[ens_translate(ens)]
+        # renormalize data
         dat = {'y': np.array(otemp).T, 'epi': np.array(etemp).T}
-        edata.append(gv.dataset.avg_data(dat,bstrap=True))
+        gvdat = gv.dataset.avg_data(dat,bstrap=True)
+        gvdat['y'] = zmat.dot(gvdat['y'])/gV**2
+        edata.append(gvdat)
     y = []
     epi = dict()
     for idx,i in enumerate(edata):
@@ -102,6 +164,7 @@ def read_data(cur,conn,params):
         epi[ens] = i['epi'][0]
     data = {'y': np.array(y).flatten(), 'epi': epi}
     return xlist, data
+
 
 def make_priors(y,params):
     p = dict()
@@ -182,11 +245,11 @@ def phys_point(p,result):
         rdict[o] = result[i] * inv_w0**4
         edict[o] = error_breakdown(fit,prior,rdict[o],o)
         string += '%s: %s +/- %s\n' %(o,rdict[o].mean,rdict[o].sdev)
-        string += 'stat: %5.3f pct\n' %(np.absolute(edict[o]['stat']/rdict[o].mean*100))
-        string += 'chir: %5.3f pct\n' %(np.absolute(edict[o]['chiral']/rdict[o].mean*100))
-        string += 'cont: %5.3f pct\n' %(np.absolute(edict[o]['cont']/rdict[o].mean*100))
-        string += 'tota: %5.3f pct\n' %(np.absolute(rdict[o].sdev/rdict[o].mean*100))
-        string += '\n'
+        #string += 'stat: %5.3f pct\n' %(np.absolute(edict[o]['stat']/rdict[o].mean*100))
+        #string += 'chir: %5.3f pct\n' %(np.absolute(edict[o]['chiral']/rdict[o].mean*100))
+        #string += 'cont: %5.3f pct\n' %(np.absolute(edict[o]['cont']/rdict[o].mean*100))
+        #string += 'tota: %5.3f pct\n' %(np.absolute(rdict[o].sdev/rdict[o].mean*100))
+        #string += '\n'
     print string
     return rdict, edict
 
@@ -243,10 +306,10 @@ def plot_data(p,x,y,result):
         res = i*inv_w0**4
         mean.append(res.mean)
         sdev.append(res.sdev)
-    fig = plt.figure(figsize=(7,4.326237))
-    ax = plt.axes([0.15,0.15,0.8,0.8])
+    fig = plt.figure(figsize=(3.50394,2.1655535534))
+    ax = plt.axes(plt_axes)
     for i in range(len(eps)):
-        ax.errorbar(x=eps[i].mean,y=mean[i],yerr=sdev[i],ls='None',marker=symbol[i],fillstyle='none',markersize='5',elinewidth=1,capsize=2,color=color[i],alpha=alpha[i])
+        ax.errorbar(x=eps[i].mean,y=mean[i],yerr=sdev[i],ls='None',marker=symbol[i],markersize=ms,elinewidth=lw,capsize=cs,mew=lw,fillstyle='none',color=color[i],mfc='black',alpha=alpha[i])
     # plot finite a fit
     xlist = []
     for i in x:
@@ -266,7 +329,7 @@ def plot_data(p,x,y,result):
             post['epi_extrap'] = xa
             r = fitc.unitary(xal,post)[0]*inv_w0**4
             mean = np.array([i.mean for i in r])
-            ax.errorbar(x=xa,y=mean,ls='-',marker='None',fillstyle='none',elinewidth=1,color=select_color(o),alpha=select_alpha(a))
+            ax.errorbar(x=xa,y=mean,ls='-',marker='None',fillstyle='none',elinewidth=lw,color=select_color(o),alpha=select_alpha(a))
     # plot continuum fit
     xc = np.linspace(0.0001, 0.2701, 271)
     xcl = []
@@ -284,12 +347,14 @@ def plot_data(p,x,y,result):
         ax.fill_between(xc,mean+sdev,mean-sdev,alpha=0.2,facecolor=select_color(o)) # purple
     # plot formatting
     # for Full Plot
-    if False:
+    if True:
         ax.set_xlim([0,xc[-1]])
-        ax.xaxis.set_tick_params(labelsize=16)
-        ax.yaxis.set_tick_params(labelsize=16)
-        ax.set_xlabel('$\epsilon_\pi$', fontsize=20)
-        ax.set_ylabel('$\mathcal{O}_i$~[GeV${}^4$]', fontsize=20)
+        #ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+        ax.xaxis.set_tick_params(labelsize=ts,width=lw)
+        ax.yaxis.set_tick_params(labelsize=ts,width=lw)
+        ax.set_xlabel('$\epsilon_\pi$', fontsize=fs_xy)
+        ax.set_ylabel('$\mathcal{O}_i$~[GeV${}^4$]', fontsize=fs_xy)
+        [i.set_linewidth(lw) for i in ax.spines.itervalues()]
         plt.draw()
         fig.savefig('./n0bb_chipt.pdf',transparent=True)
         plt.show()
@@ -298,11 +363,12 @@ def plot_data(p,x,y,result):
         ax.set_xlim([0,xc[-1]])
         ax.set_ylim([-0.0015,0.0005])
         #ax.set_yticks([-0.03, -0.02, -0.01, 0.0, 0.01])
-        ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-        ax.xaxis.set_tick_params(labelsize=16)
-        ax.yaxis.set_tick_params(labelsize=16)
-        ax.set_xlabel('$\epsilon_\pi$', fontsize=20)
-        ax.set_ylabel('$\mathcal{O}_V$~[GeV${}^4$]', fontsize=20)
+        #ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+        ax.xaxis.set_tick_params(labelsize=ts,width=lw)
+        ax.yaxis.set_tick_params(labelsize=ts,width=lw)
+        ax.set_xlabel('$\epsilon_\pi$', fontsize=fs_xy)
+        ax.set_ylabel('$\mathcal{O}_V$~[GeV${}^4$]', fontsize=fs_xy)
+        [i.set_linewidth(lw) for i in ax.spines.itervalues()]
         plt.draw()
         fig.savefig('./n0bbO3_chipt.pdf',transparent=True)
         plt.show()
