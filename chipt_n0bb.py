@@ -11,7 +11,10 @@ import password_file as pwd
 import matplotlib.pyplot as plt
 import yaml
 import tables
+import scipy.special as spsp
+
 plt.rc('text', usetex=True)
+plt.rc('font', size=7) # for sci notation
 
 if True:
     plt.rcParams['text.latex.preamble'] = [
@@ -22,21 +25,25 @@ if True:
 ms = '3'
 cs = 3
 fs_l = 7
-fs_xy = 7
+fs_xy = 9
 ts = 7
 lw = 0.5
-plt_axes = [0.14,0.155,0.825,0.825]
+plt_axes = [0.168,0.165,0.77,0.77]
 
 def params():
     # set up data set
     p = dict()
     #p['ens'] = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828','l2464f211b600m00507m0507m628','l2464f211b600m0102m0509m635','l3248f211b580m00235m0647m831','l3264f211b600m00507m0507m628','l3296f211b630m0074m037m440','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628','l4896f211b630m00363m0363m430']
-    p['ens'] = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828','l2464f211b600m00507m0507m628','l2464f211b600m0102m0509m635','l3264f211b600m00507m0507m628','l3296f211b630m0074m037m440','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628','l4896f211b630m00363m0363m430']
+    p['ens'] = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828',\
+                'l2464f211b600m0102m0509m635','l2464f211b600m00507m0507m628','l3264f211b600m00507m0507m628','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628',\
+                'l3296f211b630m0074m037m440','l4896f211b630m00363m0363m430']
     p['fit_n'] = [1]
     #p['op'] = ['LR','S','V','LR_colormix','S_colormix']
     p['op'] = ['V','LR','LR_colormix','S','S_colormix']
     #p['op'] = ['S']
     #p['op'] = ['V']
+    p['fv'] = {'flag': 'placeholder'} # edit these under __main__ because of more hacky code
+    p['ma'] = {'flag': 'placeholder'}
     # list priors
     p['prior'] = dict()
     p['prior']['g.LR'] = [0.0, 10.0]
@@ -65,10 +72,10 @@ def params():
     return p
 
 def login(nerscusr,sqlusr,pwd):
-    subprocess.call('ssh -fCN %s@edison.nersc.gov -o TCPKeepAlive=yes -L 5555:scidb1.nersc.gov:5432' %(nerscusr), shell=True)
+    #subprocess.call('ssh -fCN %s@edison.nersc.gov -o TCPKeepAlive=yes -L 5555:scidb1.nersc.gov:5432' %(nerscusr), shell=True)
     hostname='localhost'
-    databasename='c51_project2'
-    portnumber='5555'
+    databasename='callat'
+    portnumber='5432'
     try:
         conn = psql.connect(host=hostname, port=portnumber, database=databasename, user=sqlusr, password=pwd)
         cur = conn.cursor()
@@ -85,6 +92,22 @@ def login(nerscusr,sqlusr,pwd):
         print "exiting"
         raise SystemExit
 
+def hisq_params():
+    # these are from MILC
+    #"ensemble","r1a mean","r1/a sdev","a2DI mean","a2DI sdev","alfs"
+    hisq_params = dict()
+    hisq_params["l1648f211b580m013m065m838"]    = {'r1a':gv.gvar(2.059,0.023), 'r2di':gv.gvar(0.3678,0.0441), 'alpha_s':0.58801}
+    hisq_params["l2448f211b580m0064m0640m828"]  = {'r1a':gv.gvar(2.073,0.013), 'r2di':gv.gvar(0.3678,0.0441), 'alpha_s':0.58801}
+    hisq_params["l3248f211b580m00235m0647m831"] = {'r1a':gv.gvar(2.089,0.008), 'r2di':gv.gvar(0.3678,0.0441), 'alpha_s':0.58801}
+    hisq_params["l2464f211b600m0102m0509m635"]  = {'r1a':gv.gvar(2.575,0.017), 'r2di':gv.gvar(0.2068,0.0172), 'alpha_s':0.53796}
+    hisq_params["l2464f211b600m00507m0507m628"] = {'r1a':gv.gvar(2.585,0.019), 'r2di':gv.gvar(0.2068,0.0172), 'alpha_s':0.53796}
+    hisq_params["l3264f211b600m00507m0507m628"] = {'r1a':gv.gvar(2.626,0.013), 'r2di':gv.gvar(0.2068,0.0172), 'alpha_s':0.53796}
+    hisq_params["l4064f211b600m00507m0507m628"] = {'r1a':gv.gvar(2.614,0.009), 'r2di':gv.gvar(0.2068,0.0172), 'alpha_s':0.53796}
+    hisq_params["l4864f211b600m00184m0507m628"] = {'r1a':gv.gvar(2.608,0.008), 'r2di':gv.gvar(0.2068,0.0172), 'alpha_s':0.53796}
+    hisq_params["l3296f211b630m0074m037m440"]   = {'r1a':gv.gvar(3.499,0.024), 'r2di':gv.gvar(0.0631,0.0051), 'alpha_s':0.43356}
+    hisq_params["l4896f211b630m00363m0363m430"] = {'r1a':gv.gvar(3.566,0.014), 'r2di':gv.gvar(0.0631,0.0051), 'alpha_s':0.43356}
+    return hisq_params
+
 def ens_translate(ens):
     if ens in ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828','l3248f211b580m00235m0647m831']:
         r = 'a15'
@@ -94,12 +117,27 @@ def ens_translate(ens):
         r = 'a09'
     return r
 
+
 def read_data(cur,conn,params):
+    short_ens = dict()
+    short_ens['l1648f211b580m013m065m838'] = 'a15m310'
+    short_ens['l2448f211b580m0064m0640m828'] = 'a15m220'
+    short_ens['l3248f211b580m00235m0647m831'] = 'a15m130'
+    short_ens['l2464f211b600m0102m0509m635'] = 'a12m310'
+    short_ens['l2464f211b600m00507m0507m628'] = 'a12m220S'
+    short_ens['l3264f211b600m00507m0507m628'] = 'a12m220'
+    short_ens['l4064f211b600m00507m0507m628'] = 'a12m220L'
+    short_ens['l4864f211b600m00184m0507m628'] = 'a12m130'
+    short_ens['l3296f211b630m0074m037m440'] = 'a09m310'
+    short_ens['l4896f211b630m00363m0363m430'] = 'a09m220'
+    short_ens['l6496f211b630m0012m0363m432'] = 'a09m130'
     ens_list = params['ens']
     fit_n = params['fit_n']
     op_list = params['op']
     edata = []
     xlist = []
+    mpiL = dict()
+    mmaL = dict()
     # read data
     for ens in ens_list:
         # a/w0
@@ -113,15 +151,54 @@ def read_data(cur,conn,params):
         # get matrix element
         otemp = [] # temp ME
         etemp = [] # temp epi
+        mtemp = [] # temp ema
+        rtemp = [] # temp rma
+        xtemp = [] # temp mpi
         for n in fit_n:
+            # get L
+            sql_cmd = "SELECT nl::integer FROM callat_corr.hisq_ensembles WHERE tag='%s';" %ens
+            cur.execute(sql_cmd)
+            nl = cur.fetchone()[0]
             # get epi
             sql_cmd = "SELECT result::double precision FROM callat_proj.n0bb_v1 WHERE hisq_ensembles='%s' AND operator='epi' and fit_n=%s ORDER BY nbs;" %(ens,n)
             cur.execute(sql_cmd)
             temp = cur.fetchall()
             etemp.append(np.array([i[0] for i in temp]))
+            # get ema
+            if ens in ['l2464f211b600m00507m0507m628','l4064f211b600m00507m0507m628']:
+                ens_ma = 'l3264f211b600m00507m0507m628'
+            else:
+                ens_ma = ens
+            sql_cmd = """SELECT "E0"::double precision FROM callat_proj.github_mixed_v1 WHERE ensemble='%s'AND tag='phi_ju' ORDER by nbs;""" %(ens_ma)
+            cur.execute(sql_cmd)
+            temp = cur.fetchall()
+            e0ma = np.array([i[0] for i in temp])
+            sql_cmd = """SELECT "e0"::double precision FROM callat_proj.github_fkfpi_pion_v1 WHERE ensemble='%s' ORDER by nbs;""" %(ens)
+            cur.execute(sql_cmd)
+            temp = cur.fetchall()
+            e0 = np.array([i[0] for i in temp])
+            xtemp.append(e0)
+            sql_cmd = """SELECT "z0p"::double precision FROM callat_proj.github_fkfpi_pion_v1 WHERE ensemble='%s' ORDER BY nbs;""" %(ens)
+            cur.execute(sql_cmd)
+            temp = cur.fetchall()
+            z0p = np.array([i[0] for i in temp])
+            sql_cmd = """SELECT "mq1"::double precision FROM callat_proj.github_fkfpi_pion_v1 WHERE ensemble='%s' ORDER BY nbs;""" %(ens)
+            cur.execute(sql_cmd)
+            temp = cur.fetchall()
+            mq1 = np.array([i[0] for i in temp])
+            sql_cmd = """SELECT "mres"::double precision FROM callat_proj.github_fkfpi_mresl_v1 WHERE ensemble='%s' ORDER BY nbs;""" %(ens)
+            cur.execute(sql_cmd)
+            temp = cur.fetchall()
+            mresl = np.array([i[0] for i in temp])
+            Fpi = z0p*2.*(mq1+mresl)/e0**(3./2.)
+            ema = e0ma/(4.*np.pi*Fpi)
+            mtemp.append(ema)
+            rma = e0ma/e0
+            rtemp.append(rma)
+            mpiL[ens] = e0[0]*nl
+            mmaL[ens] = e0ma[0]*nl
             for o in op_list:
-                # get renorm coefficients
-                # get ME
+                # get pi+ to pi- ME
                 sql_cmd = "SELECT result::double precision FROM callat_proj.n0bb_v1 WHERE hisq_ensembles='%s' AND operator='%s' and fit_n=%s ORDER BY nbs;" %(ens,o,n)
                 cur.execute(sql_cmd)
                 temp = cur.fetchall()
@@ -154,15 +231,27 @@ def read_data(cur,conn,params):
         # renormalize data
         dat = {'y': np.array(otemp).T, 'epi': np.array(etemp).T}
         gvdat = gv.dataset.avg_data(dat,bstrap=True)
+        gvdat['mixed_action'] = gv.dataset.avg_data({'ema': np.array(mtemp).T, 'rma': np.array(rtemp).T, 'mpi': np.array(xtemp).T},bstrap=True)
+        print("%.8s&%s&%s&%s&%s&%s\\\\" %(short_ens[ens],gvdat['y'][1],gvdat['y'][2],gvdat['y'][3],gvdat['y'][4],gvdat['y'][0]))
         gvdat['y'] = zmat.dot(gvdat['y'])/gV**2
         edata.append(gvdat)
     y = []
     epi = dict()
+    ema = dict()
+    rma = dict()
+    ri = dict()
+    # read hisq params
+    hp = hisq_params()
     for idx,i in enumerate(edata):
         ens = ens_list[idx]
         y.append(i['y'])
         epi[ens] = i['epi'][0]
-    data = {'y': np.array(y).flatten(), 'epi': epi}
+        ema[ens] = i['mixed_action']['ema'][0]
+        rma[ens] = i['mixed_action']['rma'][0]
+        a2di = hp[ens]['r2di']/hp[ens]['r1a']**2
+        ri[ens] = a2di/i['mixed_action']['mpi'][0]
+    data = {'y': np.array(y).flatten(), 'epi': epi, 'ema':ema, 'rma':rma, 'ri':ri, 'mpiL':mpiL, 'mmaL':mmaL}
+    print data
     return xlist, data
 
 
@@ -176,45 +265,118 @@ def make_priors(y,params):
                 pass
     for k in y['epi'].keys():
         p['epi_%s' %k] = y['epi'][k]
+    for k in y['ema'].keys():
+        p['ema_%s' %k] = y['ema'][k]
+    for k in y['rma'].keys():
+        p['rma_%s' %k] = y['rma'][k]
+    for k in y['ri'].keys():
+        p['ri_%s' %k] = y['ri'][k]
     return p
          
 
 class fit_functions():
-    def __init__(self):
+    def __init__(self,fv={'flag':False,'mpiL':None},ma={'flag':False,'mpiL':None}):
+        self.fv_flag = fv['flag']
+        self.ma_flag = ma['flag']
+        if self.fv_flag:
+            cn = np.array([6,12,8,6,24,24,0,12,30,24,24,8,24,48,0,6,48,36,24,24]) # |n| multiplicity
+            osum = np.sqrt(np.arange(1,len(cn)+1))
+            mLn = {ens:fv['mpiL'][ens]*osum for ens in fv['mpiL']}
+            kn1 = {ens:spsp.kn(1, mLn[ens]) for ens in fv['mpiL']}
+            self.k1log = dict()
+            self.k1log['epi'] = dict()
+            self.k1log['epi'] = {ens:4*np.sum(cn*kn1[ens]/mLn[ens]) for ens in fv['mpiL']}
+            if self.ma_flag:
+                ma_mLn = {ens:ma['mpiL'][ens]*osum for ens in ma['mpiL']}
+                ma_kn1 = {ens:spsp.kn(1, ma_mLn[ens]) for ens in ma['mpiL']}
+                kn0 = {ens:spsp.kn(0, mLn[ens]) for ens in fv['mpiL']}
+                self.k1log['ema'] = dict()
+                self.k1log['ema'] = {ens:4*np.sum(cn*ma_kn1[ens]/ma_mLn[ens]) for ens in ma['mpiL']}
+                self.k0log = {ens:-2*np.sum(cn*kn0[ens]) for ens in fv['mpiL']}
         return None
+    def fit_switch(self,x,p):
+        if self.ma_flag:
+            r = self.ma_unitary(x,p)
+        else:
+            r = self.unitary(x,p)
+        return r
+    def fv_logs(self,e_string,xi,p):
+        ensemble = xi['tag']
+        log = np.log(p['%s_%s' %(e_string,ensemble)]**2)
+        if self.fv_flag:
+            log += self.k1log[e_string][ensemble]
+        else: pass
+        return log
+    def k0_log(self,xi,p):
+        if self.fv_flag:
+            return self.k0log[xi['tag']]
+        else:
+            return np.log(p['epi_%s' %xi['tag']]**2) + 1.
     def unitary(self,x,p):
         fit = []
-        for i in x:
-            k = i['tag']
+        for xi in x:
+            k = xi['tag']
             epi = p['epi_%s' %k]
-            if i['op'] in ['V']:
-                fit.append(self.u_V(i,p,epi))
-            elif i['op'] in ['LR','LR_colormix','S','S_colormix']:
-                fit.append(self.u_LRS(i,p,epi))
+            if xi['op'] in ['V']:
+                fit.append(self.u_V(xi,p,epi))
+            elif xi['op'] in ['LR','LR_colormix','S','S_colormix']:
+                fit.append(self.u_LRS(xi,p,epi))
         return fit
-    def u_V(self,x,p,epi):
+    def u_V(self,xi,p,epi):
         # LO + NLO log
-        fit = (4.*np.pi*epi)**2*p['g.V']*(1.-16./3.*epi**2*np.log(epi**2))
+        fit = (4.*np.pi*epi)**2*p['g.V']*(1.-16./3.*epi**2*self.fv_logs('epi',xi,p))
         # NLO counterterm
         fit += epi**4*p['c.V']
         # NLO discretization
-        fit += epi**2 * x['aw0']**2 * p['a.V']
+        fit += epi**2 * xi['aw0']**2 * p['a.V']
         return fit
-    def u_LRS(self,x,p,epi):
+    def u_LRS(self,xi,p,epi):
         # LO + NLO log
-        fit = p['g.%s' %x['op']]*(1.-10./3.*epi**2*np.log(epi**2))
+        fit = p['g.%s' %xi['op']]*(1.-10./3.*epi**2*self.fv_logs('epi',xi,p))
         # NLO counterterm
-        fit += epi**2*p['c.%s' %x['op']]
+        fit += epi**2*p['c.%s' %xi['op']]
         # NLO discretization
-        fit += x['aw0']**2*p['a.%s' %x['op']]
+        fit += xi['aw0']**2*p['a.%s' %xi['op']]
         return fit
+    def ma_unitary(self,x,p):
+        fit = []
+        for xi in x:
+            ensemble = xi['tag']
+            epi = p['epi_%s' %ensemble]
+            ema = p['ema_%s' %ensemble]
+            rma = p['rma_%s' %ensemble]
+            ri = p['ri_%s' %ensemble]
+            if xi['op'] in ['V']:
+                fit.append(self.ma_u_V(xi,p,epi,ema,rma))
+            elif xi['op'] in ['LR','LR_colormix']:
+                fit.append(self.ma_u_LR(xi,p,epi,ema,rma))
+            elif xi['op'] in ['S','S_colormix']:
+                fit.append(self.ma_u_S(xi,p,epi,ema,rma,ri))
+        return fit
+    def ma_u_V(self,xi,p,epi,ema,rma):
+        r = (4.*np.pi*epi)**2*p['g.V']*( 1-16./3.*epi**2*( 0.25*self.fv_logs('epi',xi,p)+0.75*rma*self.fv_logs('ema',xi,p) ) )
+        r += epi**4*p['c.V']
+        r += epi**2 * xi['aw0']**2 * p['a.V']
+        return r
+    def ma_u_LR(self,xi,p,epi,ema,rma):
+        r = p['g.%s' %xi['op']]*( 1-10./3.*epi**2*( -1./5.*self.fv_logs('epi',xi,p)+6./5.*rma*self.fv_logs('ema',xi,p) ) )
+        r += epi**2*p['c.%s' %xi['op']]
+        r += xi['aw0']**2*p['a.%s' %xi['op']]
+        return r
+    def ma_u_S(self,xi,p,epi,ema,rma,ri):
+        r = p['g.%s' %xi['op']]* (1.-10./3.*epi**2* (-1./5.*self.fv_logs('epi',xi,p) + 6./5.*rma*self.fv_logs('ema',xi,p)*6./5.*ri*self.k0_log(xi,p) ) )
+        r += epi**2*p['c.%s' %xi['op']]
+        r += xi['aw0']**2*p['a.%s' %xi['op']]
+        return r
 
 def fit_data(x,y,p):
     prior = make_priors(y,p)
-    fitc = fit_functions()
-    fit = lsqfit.nonlinear_fit(data=(x,y['y']),prior=prior,fcn=fitc.unitary,maxit=1000000)
+    p['fv']['mpiL'] = y['mpiL']
+    p['ma']['mpiL'] = y['mmaL']
+    fitc = fit_functions(fv=p['fv'],ma=p['ma'])
+    fit = lsqfit.nonlinear_fit(data=(x,y['y']),prior=prior,fcn=fitc.fit_switch,maxit=1000000)
     print fit
-    return {'fit': fit, 'prior': prior}
+    return {'fit': fit, 'prior': prior, 'fitc': fitc}
 
 def phys_point(p,result):
     def error_breakdown(fit,prior,r,o):
@@ -226,7 +388,7 @@ def phys_point(p,result):
     fit = result['fit']
     prior = result['prior']
     mpi_phys = 139.57018 # MeV
-    fpi_phys = 93 # MeV
+    fpi_phys = 130.41/np.sqrt(2) # MeV
     eps_phys = mpi_phys/(4.*np.pi*fpi_phys)
     x = []
     for o in p['op']:
@@ -236,7 +398,7 @@ def phys_point(p,result):
     for k in prior.keys():
         post[k] = fit.p[k]
     post['epi_phys'] = eps_phys
-    result = fitc.unitary(x,post)
+    result = fitc.fit_switch(x,post)
     rdict = dict()
     edict = dict()
     string = ''
@@ -253,7 +415,7 @@ def phys_point(p,result):
     print string
     return rdict, edict
 
-def plot_data(p,x,y,result):
+def plot_data(p,x,y,result,first_pass=True,fig=None,ax=None):
     def select_alpha(tag):
         if tag in ['l1648f211b580m013m065m838', 'l2448f211b580m0064m0640m828', 'l3248f211b580m00235m0647m831',0.8804]:
             alpha = 1.0
@@ -302,36 +464,52 @@ def plot_data(p,x,y,result):
     mean = []
     sdev = []
     inv_w0 = 0.197327/gv.gvar(0.1714,0.0015) #[GeV/fm * fm] MILC gradient flow paper abstract
-    for i in y['y']:
-        res = i*inv_w0**4
+    if first_pass:
+        fig = plt.figure(figsize=(3.50394,2.1655535534))
+        ax = plt.axes(plt_axes)
+    # correct for FV
+    fitoutput = np.array(result['fitc'].fit_switch(x,result['fit'].p))
+    result['fitc'].fv_flag = False # turn FV off
+    nfvoutput = np.array(result['fitc'].fit_switch(x,result['fit'].p))
+    fvshift = fitoutput-nfvoutput
+    for idx,mele in enumerate(y['y']):
+        res = (mele+fvshift[idx])*inv_w0**4 # shift data to infinite volume if FV corrections are added
         mean.append(res.mean)
         sdev.append(res.sdev)
-    fig = plt.figure(figsize=(3.50394,2.1655535534))
-    ax = plt.axes(plt_axes)
-    for i in range(len(eps)):
-        ax.errorbar(x=eps[i].mean,y=mean[i],yerr=sdev[i],ls='None',marker=symbol[i],markersize=ms,elinewidth=lw,capsize=cs,mew=lw,fillstyle='none',color=color[i],mfc='black',alpha=alpha[i])
+    if first_pass:
+        for i in range(len(eps)):
+            ax.errorbar(x=eps[i].mean**2,y=mean[i],yerr=sdev[i],ls='None',marker=symbol[i],markersize=ms,elinewidth=lw,capsize=cs,mew=lw,fillstyle='none',color=color[i],mfc='black',alpha=alpha[i])
     # plot finite a fit
-    xlist = []
-    for i in x:
-        xlist.append(i['aw0'])
-    xlist = np.unique(xlist)
-    xa = np.linspace(0.0001, 0.2701, 271)
-    fitc = fit_functions()
-    xal = []
-    for o in p['op']:
-        for a in xlist:
-            xal = []
-            for i in range(len(xa)):
-                xal.append({'op':o, 'tag':'extrap','aw0':a})
-            post = dict()
-            for k in prior.keys():
-                post[k] = fit.p[k]
-            post['epi_extrap'] = xa
-            r = fitc.unitary(xal,post)[0]*inv_w0**4
-            mean = np.array([i.mean for i in r])
-            ax.errorbar(x=xa,y=mean,ls='-',marker='None',fillstyle='none',elinewidth=lw,color=select_color(o),alpha=select_alpha(a))
+    if not result['fitc'].ma_flag:
+        xlist = []
+        for i in x:
+            xlist.append(i['aw0'])
+        xlist = np.unique(xlist)
+        xa2 = np.linspace(0.0001**2, 0.2701**2, 271)
+        xa = np.sqrt(xa2)
+        fitc = fit_functions()
+        xal = []
+        for o in p['op']:
+            for a in xlist:
+                xal = []
+                for i in range(len(xa)):
+                    xal.append({'op':o, 'tag':'extrap','aw0':a})
+                post = dict()
+                for k in prior.keys():
+                    post[k] = fit.p[k]
+                post['epi_extrap'] = xa
+                r = fitc.unitary(xal,post)[0]*inv_w0**4
+                mean = np.array([i.mean for i in r])
+                ax.errorbar(x=xa2,y=mean,ls='--',marker='None',fillstyle='none',elinewidth=lw,color=select_color(o),alpha=select_alpha(a),lw=lw)
+    # plot phys epsilon pi
+    mpi_phys = 139.57018
+    fpi_phys = 130.41/np.sqrt(2) # MeV
+    eps_phys = mpi_phys/(4.*np.pi*fpi_phys)
+    if first_pass:
+        ax.axvline(eps_phys**2,ls='--',color='#a6aaa9',lw=lw)
     # plot continuum fit
-    xc = np.linspace(0.0001, 0.2701, 271)
+    xc2 = np.linspace(0.0001**2, 0.2701**2, 271)
+    xc = np.sqrt(xc2)
     xcl = []
     for o in p['op']:
         xcl = []
@@ -341,43 +519,61 @@ def plot_data(p,x,y,result):
         for k in prior.keys():
             post[k] = fit.p[k]
         post['epi_extrap'] = xc
+        fitc = fit_functions()
         r = fitc.unitary(xcl,post)[0]*inv_w0**4
         mean = np.array([i.mean for i in r])
         sdev = np.array([i.sdev for i in r])
-        ax.fill_between(xc,mean+sdev,mean-sdev,alpha=0.2,facecolor=select_color(o)) # purple
+        if first_pass:
+            ax.fill_between(xc2,mean+sdev,mean-sdev,alpha=0.2,facecolor=select_color(o)) # purple
+        else:
+            ax.errorbar(x=xc2,y=mean+sdev,ls='--',marker='None',fillstyle='none',color='black',lw=lw)
+            ax.errorbar(x=xc2,y=mean-sdev,ls='--',marker='None',fillstyle='none',color='black',lw=lw)
     # plot formatting
     # for Full Plot
     if True:
-        ax.set_xlim([0,xc[-1]])
-        #ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+        ax.set_xlim([0,xc[-1]**2])
+        ax.set_ylim([-0.025,0.115])
+        ax.ticklabel_format(style='plain', axis='y')
         ax.xaxis.set_tick_params(labelsize=ts,width=lw)
         ax.yaxis.set_tick_params(labelsize=ts,width=lw)
-        ax.set_xlabel('$\epsilon_\pi$', fontsize=fs_xy)
+        ax.set_xlabel('$\epsilon_\pi^2$', fontsize=fs_xy)
         ax.set_ylabel('$\mathcal{O}_i$~[GeV${}^4$]', fontsize=fs_xy)
         [i.set_linewidth(lw) for i in ax.spines.itervalues()]
         plt.draw()
         fig.savefig('./n0bb_chipt.pdf',transparent=True)
-        plt.show()
+        #plt.show()
     # for V
-    else:
-        ax.set_xlim([0,xc[-1]])
-        ax.set_ylim([-0.0015,0.0005])
+    if True:
+        ax.set_xlim([0,xc[-1]**2])
+        ax.set_ylim([-0.002,0.00024])
         #ax.set_yticks([-0.03, -0.02, -0.01, 0.0, 0.01])
-        #ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+        ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
         ax.xaxis.set_tick_params(labelsize=ts,width=lw)
         ax.yaxis.set_tick_params(labelsize=ts,width=lw)
-        ax.set_xlabel('$\epsilon_\pi$', fontsize=fs_xy)
-        ax.set_ylabel('$\mathcal{O}_V$~[GeV${}^4$]', fontsize=fs_xy)
+        ax.set_xlabel('$\epsilon_\pi^2$', fontsize=fs_xy)
+        ax.set_ylabel('$\mathcal{O}_3$~[GeV${}^4$]', fontsize=fs_xy)
         [i.set_linewidth(lw) for i in ax.spines.itervalues()]
         plt.draw()
         fig.savefig('./n0bbO3_chipt.pdf',transparent=True)
-        plt.show()
+        #plt.show()
+    return fig,ax
                 
 if __name__=="__main__":
     psqlpwd = pwd.passwd()
     cur, conn = login('cchang5','cchang5',psqlpwd)
+    # main fit 
     p = params()
+    p['fv'] = {'flag': False}
+    p['ma'] = {'flag': False}
     x,y = read_data(cur,conn,p)
     result = fit_data(x,y,p)
     phys_point(p,result)
-    plot_data(p,x,y,result)
+    fig,ax = plot_data(p,x,y,result)
+    # additional fit
+    p = params()
+    p['fv'] = {'flag': False}
+    p['ma'] = {'flag': True}
+    x,y = read_data(cur,conn,p)
+    result = fit_data(x,y,p)
+    phys_point(p,result)
+    plot_data(p,x,y,result,first_pass=False,fig=fig,ax=ax)
