@@ -309,7 +309,7 @@ class fit_functions():
         return log
     def k0_log(self,xi,p):
         if self.fv_flag:
-            return self.k0log[xi['tag']]
+            return np.log(p['epi_%s' %xi['tag']]**2) - 2.*self.k0log[xi['tag']] + 1.
         else:
             return np.log(p['epi_%s' %xi['tag']]**2) + 1.
     def unitary(self,x,p):
@@ -364,7 +364,7 @@ class fit_functions():
         r += xi['aw0']**2*p['a.%s' %xi['op']]
         return r
     def ma_u_S(self,xi,p,epi,ema,rma,ri):
-        r = p['g.%s' %xi['op']]* (1.-10./3.*epi**2* (-1./5.*self.fv_logs('epi',xi,p) + 6./5.*rma*self.fv_logs('ema',xi,p)*6./5.*ri*self.k0_log(xi,p) ) )
+        r = p['g.%s' %xi['op']]* (1.-10./3.*epi**2* (-1./5.*self.fv_logs('epi',xi,p) + 6./5.*rma*self.fv_logs('ema',xi,p) + 6./5.*ri*self.k0_log(xi,p) ) )
         r += epi**2*p['c.%s' %xi['op']]
         r += xi['aw0']**2*p['a.%s' %xi['op']]
         return r
@@ -563,7 +563,7 @@ if __name__=="__main__":
     cur, conn = login('cchang5','cchang5',psqlpwd)
     # main fit 
     p = params()
-    p['fv'] = {'flag': False}
+    p['fv'] = {'flag': True}
     p['ma'] = {'flag': False}
     x,y = read_data(cur,conn,p)
     result = fit_data(x,y,p)
@@ -571,7 +571,7 @@ if __name__=="__main__":
     fig,ax = plot_data(p,x,y,result)
     # additional fit
     p = params()
-    p['fv'] = {'flag': False}
+    p['fv'] = {'flag': True}
     p['ma'] = {'flag': True}
     x,y = read_data(cur,conn,p)
     result = fit_data(x,y,p)
