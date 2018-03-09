@@ -193,7 +193,7 @@ def read_data(cur,conn,params):
             Fpi = z0p*2.*(mq1+mresl)/e0**(3./2.)
             ema = e0ma/(4.*np.pi*Fpi)
             mtemp.append(ema)
-            rma = e0ma/e0
+            rma = (e0ma/e0)**2
             rtemp.append(rma)
             mpiL[ens] = e0[0]*nl
             mmaL[ens] = e0ma[0]*nl
@@ -240,6 +240,7 @@ def read_data(cur,conn,params):
     ema = dict()
     rma = dict()
     ri = dict()
+    mpi = dict()
     # read hisq params
     hp = hisq_params()
     for idx,i in enumerate(edata):
@@ -249,8 +250,9 @@ def read_data(cur,conn,params):
         ema[ens] = i['mixed_action']['ema'][0]
         rma[ens] = i['mixed_action']['rma'][0]
         a2di = hp[ens]['r2di']/hp[ens]['r1a']**2
-        ri[ens] = a2di/i['mixed_action']['mpi'][0]
-    data = {'y': np.array(y).flatten(), 'epi': epi, 'ema':ema, 'rma':rma, 'ri':ri, 'mpiL':mpiL, 'mmaL':mmaL}
+        ri[ens] = a2di/i['mixed_action']['mpi'][0]**2
+        mpi[ens] = i['mixed_action']['mpi'][0]
+    data = {'y': np.array(y).flatten(), 'epi': epi, 'ema':ema, 'rma':rma, 'ri':ri, 'mpiL':mpiL, 'mmaL':mmaL, 'mpi':mpi}
     print data
     return xlist, data
 
@@ -271,6 +273,8 @@ def make_priors(y,params):
         p['rma_%s' %k] = y['rma'][k]
     for k in y['ri'].keys():
         p['ri_%s' %k] = y['ri'][k]
+    for k in y['mpi'].keys():
+        p['mpi_%s' %k] = y['mpi'][k]
     return p
          
 
@@ -278,6 +282,7 @@ class fit_functions():
     def __init__(self,fv={'flag':False,'mpiL':None},ma={'flag':False,'mpiL':None}):
         self.fv_flag = fv['flag']
         self.ma_flag = ma['flag']
+        print(self.ma_flag)
         if self.fv_flag:
             cn = np.array([6,12,8,6,24,24,0,12,30,24,24,8,24,48,0,6,48,36,24,24]) # |n| multiplicity
             osum = np.sqrt(np.arange(1,len(cn)+1))
@@ -286,7 +291,7 @@ class fit_functions():
             self.k1log = dict()
             self.k1log['epi'] = dict()
             self.k1log['epi'] = {ens:4*np.sum(cn*kn1[ens]/mLn[ens]) for ens in fv['mpiL']}
-            if self.ma_flag:
+            if self.ma_flag in [True,'reformat']:
                 ma_mLn = {ens:ma['mpiL'][ens]*osum for ens in ma['mpiL']}
                 ma_kn1 = {ens:spsp.kn(1, ma_mLn[ens]) for ens in ma['mpiL']}
                 kn0 = {ens:spsp.kn(0, mLn[ens]) for ens in fv['mpiL']}
@@ -295,8 +300,12 @@ class fit_functions():
                 self.k0log = {ens:-2*np.sum(cn*kn0[ens]) for ens in fv['mpiL']}
         return None
     def fit_switch(self,x,p):
-        if self.ma_flag:
+        if self.ma_flag == True:
             r = self.ma_unitary(x,p)
+        elif self.ma_flag == 'reformat':
+            r = self.ma_reformat(x,p)
+        elif self.ma_flag == 'xreformat':
+            r = self.x_reformat(x,p)
         else:
             r = self.unitary(x,p)
         return r
@@ -368,6 +377,65 @@ class fit_functions():
         r += epi**2*p['c.%s' %xi['op']]
         r += xi['aw0']**2*p['a.%s' %xi['op']]
         return r
+    def ma_reformat(self,x,p):
+        fit = []
+        for xi in x:
+            ensemble = xi['tag']
+            epi = p['epi_%s' %ensemble] # mpi/4piFpi
+            ema = p['ema_%s' %ensemble] # mma/4piFpi
+            rma = p['rma_%s' %ensemble] # (ma/mpi)^2
+            ri = p['ri_%s' %ensemble] # a^2D_I/mpi^2
+            mpi = p['mpi_%s' %ensemble] # mpi
+            Lambda = mpi/(epi*xi['aw0']) # 4piFpi in w0 units
+            epq2 = ri*mpi**2/Lambda**2 # a^2*D_I/(4piFpi)**2
+            if xi['op'] in ['V']:
+                fit.append(self.ma_reform_u_V(xi,p,epi,ema,Lambda))
+            elif xi['op'] in ['LR','LR_colormix']:
+                fit.append(self.ma_reform_u_LR(xi,p,epi,ema,Lambda))
+            elif xi['op'] in ['S','S_colormix']:
+                fit.append(self.ma_reform_u_S(xi,p,epi,ema,epq2,Lambda))
+        return fit
+    def ma_reform_u_V(self,xi,p,epi,ema,Lambda):
+        r = p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * epi**2 * (1. + 2.*ema**2*self.fv_logs('ema',xi,p) - 2./3.*epi**2*self.fv_logs('epi',xi,p))
+        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * epi**2 * p['c.%s' %xi['op']]*epi**2
+        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * epi**2 * p['a.%s' %xi['op']]*xi['aw0']**2
+        return r
+    def ma_reform_u_LR(self,xi,p,epi,ema,Lambda):
+        r = p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * (1. + 2.*ema**2*self.fv_logs('ema',xi,p) + 1./3.*epi**2*self.fv_logs('epi',xi,p))
+        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * p['c.%s' %xi['op']]*epi**2
+        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * p['a.%s' %xi['op']]*xi['aw0']**2
+        return r
+    def ma_reform_u_S(self,xi,p,epi,ema,epq2,Lambda):
+        r = p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * (1. + 2.*ema**2*self.fv_logs('ema',xi,p) + 1./3.*epi**2*self.fv_logs('epi',xi,p) -2.*epq2*self.k0_log(xi,p))
+        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * p['c.%s' %xi['op']]*epi**2
+        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * p['a.%s' %xi['op']]*xi['aw0']**2
+        return r
+    def x_reformat(self,x,p):
+        fit = []
+        for xi in x:
+            k = xi['tag']
+            epi = p['epi_%s' %k]
+            mpi = p['mpi_%s' %k] # mpi
+            if xi['aw0'] == 0:
+                xhack = 1.
+            else:
+                xhack = xi['aw0']
+            Lambda = mpi/(epi*xhack) # 4piFpi in w0 units
+            if xi['op'] in ['V']:
+                fit.append(self.reform_u_V(xi,p,epi,Lambda))
+            elif xi['op'] in ['LR','LR_colormix','S','S_colormix']:
+                fit.append(self.reform_u_LRS(xi,p,epi,Lambda))
+        return fit
+    def reform_u_V(self,xi,p,epi,Lambda):
+        r = p['g.%s' %xi['op']]*Lambda**4*epi**2/(4.*np.pi)**2 * (1. + 4./3.*epi**2*self.fv_logs('epi',xi,p))
+        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * epi**2 * p['c.%s' %xi['op']]*epi**2
+        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * epi**2 * p['a.%s' %xi['op']]*xi['aw0']**2
+        return r
+    def reform_u_LRS(self,xi,p,epi,Lambda):
+        r = p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * (1. + 7./3.*epi**2*self.fv_logs('epi',xi,p))
+        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * p['c.%s' %xi['op']]*epi**2
+        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * p['a.%s' %xi['op']]*xi['aw0']**2
+        return r
 
 def fit_data(x,y,p):
     prior = make_priors(y,p)
@@ -387,17 +455,21 @@ def phys_point(p,result):
         return e
     fit = result['fit']
     prior = result['prior']
-    mpi_phys = 139.57018 # MeV
-    fpi_phys = 130.41/np.sqrt(2) # MeV
+    mpi_phys = 0.13957018 # GeV
+    fpi_phys = 0.13041/np.sqrt(2) # GeV
     eps_phys = mpi_phys/(4.*np.pi*fpi_phys)
     x = []
     for o in p['op']:
         x.append({'op':o,'tag': 'phys', 'aw0': 0})
-    fitc = fit_functions()
+    if result['fitc'].ma_flag in ['reformat','xreformat']:
+        fitc = fit_functions(ma={'flag':'xreformat'})
+    else:
+        fitc = fit_functions()
     post = dict()
     for k in prior.keys():
         post[k] = fit.p[k]
     post['epi_phys'] = eps_phys
+    post['mpi_phys'] = mpi_phys
     result = fitc.fit_switch(x,post)
     rdict = dict()
     edict = dict()
@@ -564,7 +636,7 @@ if __name__=="__main__":
     # main fit 
     p = params()
     p['fv'] = {'flag': True}
-    p['ma'] = {'flag': False}
+    p['ma'] = {'flag': 'reformat'}
     x,y = read_data(cur,conn,p)
     result = fit_data(x,y,p)
     phys_point(p,result)
