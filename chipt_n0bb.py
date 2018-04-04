@@ -34,46 +34,47 @@ def params():
     # set up data set
     p = dict()
     #p['ens'] = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828','l2464f211b600m00507m0507m628','l2464f211b600m0102m0509m635','l3248f211b580m00235m0647m831','l3264f211b600m00507m0507m628','l3296f211b630m0074m037m440','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628','l4896f211b630m00363m0363m430']
-    p['ens'] = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828',\
-                'l2464f211b600m0102m0509m635','l2464f211b600m00507m0507m628','l3264f211b600m00507m0507m628','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628',\
-                'l3296f211b630m0074m037m440','l4896f211b630m00363m0363m430']
+    #p['ens'] = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828',\
+    #            'l2464f211b600m0102m0509m635','l2464f211b600m00507m0507m628','l3264f211b600m00507m0507m628','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628',\
+    #            'l3296f211b630m0074m037m440','l4896f211b630m00363m0363m430']
+    p['ens'] = ['l2448f211b580m0064m0640m828',\
+                'l2464f211b600m00507m0507m628','l3264f211b600m00507m0507m628','l4864f211b600m00184m0507m628']
+                #'l4896f211b630m00363m0363m430']
     p['fit_n'] = [1]
-    #p['op'] = ['LR','S','V','LR_colormix','S_colormix']
-    p['op'] = ['V','LR','LR_colormix','S','S_colormix']
-    #p['op'] = ['S']
-    #p['op'] = ['V']
+    p['op'] = ['V','LR','LR_colormix','S','S_colormix'] # THIS ORDER CAN NOT CHANGE.....
+    p['version'] = 2
     p['fv'] = {'flag': 'placeholder'} # edit these under __main__ because of more hacky code
     p['ma'] = {'flag': 'placeholder'}
     # list priors
     p['prior'] = dict()
-    p['prior']['g.LR'] = [0.0, 100.0]
-    p['prior']['c.LR'] = [0.0, 100.0] # m^2
-    p['prior']['a.LR'] = [0.0, 100.0] # a^2
-    p['prior']['m.LR'] = [0.0, 10.0] # a^2 m^2
-    p['prior']['d.LR'] = [0.0, 10.0] # m^4
-    p['prior']['b.LR'] = [0.0, 10.0] # a^4
-    p['prior']['g.S'] = [0.0, 100.0]
-    p['prior']['c.S'] = [0.0, 100.0] # m^2
-    p['prior']['a.S'] = [0.0, 100.0] # a^2
-    p['prior']['m.S'] = [0.0, 10.0] # a^2 m^2
-    p['prior']['d.S'] = [0.0, 10.0] # m^4
-    p['prior']['b.S'] = [0.0, 10.0] # a^4
-    p['prior']['g.V'] = [0.0, 100.0]
-    p['prior']['c.V'] = [0.0, 100.0] # m^4
-    p['prior']['a.V'] = [0.0, 100.0] # a^4
-    p['prior']['m.V'] = [0.0, 100.0] # a^2 m^2
-    p['prior']['g.LR_colormix'] = [0.0, 100.0]
-    p['prior']['c.LR_colormix'] = [0.0, 100.0] # m^2
-    p['prior']['a.LR_colormix'] = [0.0, 100.0] # a^2
-    p['prior']['m.LR_colormix'] = [0.0, 10.0] # a^2 m^2
-    p['prior']['d.LR_colormix'] = [0.0, 10.0] # m^4
-    p['prior']['b.LR_colormix'] = [0.0, 10.0] # a^4
-    p['prior']['g.S_colormix'] = [0.0, 100.0]
-    p['prior']['c.S_colormix'] = [0.0, 100.0] # m^2
-    p['prior']['a.S_colormix'] = [0.0, 100.0] # a^2
-    p['prior']['m.S_colormix'] = [0.0, 10.0] # a^2 m^2
-    p['prior']['d.S_colormix'] = [0.0, 10.0] # m^4
-    p['prior']['b.S_colormix'] = [0.0, 10.0] # a^4
+    p['prior']['g.LR'] = [0.0, 10.0]
+    p['prior']['c.LR'] = [0.0, 10.0] # m^2
+    p['prior']['a.LR'] = [0.0, 10.0] # a^2
+    p['prior']['m.LR'] = [0.0, 1.0] # a^2 m^2
+    p['prior']['d.LR'] = [0.0, 1.0] # m^4
+    p['prior']['b.LR'] = [0.0, 1.0] # a^4
+    p['prior']['g.S'] = [0.0, 10.0]
+    p['prior']['c.S'] = [0.0, 10.0] # m^2
+    p['prior']['a.S'] = [0.0, 10.0] # a^2
+    p['prior']['m.S'] = [0.0, 1.0] # a^2 m^2
+    p['prior']['d.S'] = [0.0, 1.0] # m^4
+    p['prior']['b.S'] = [0.0, 1.0] # a^4
+    p['prior']['g.V'] = [0.0, 10.0]
+    p['prior']['c.V'] = [0.0, 10.0] # m^4
+    p['prior']['a.V'] = [0.0, 10.0] # a^4
+    p['prior']['m.V'] = [0.0, 10.0] # a^2 m^2
+    p['prior']['g.LR_colormix'] = [0.0, 10.0]
+    p['prior']['c.LR_colormix'] = [0.0, 10.0] # m^2
+    p['prior']['a.LR_colormix'] = [0.0, 10.0] # a^2
+    p['prior']['m.LR_colormix'] = [0.0, 1.0] # a^2 m^2
+    p['prior']['d.LR_colormix'] = [0.0, 1.0] # m^4
+    p['prior']['b.LR_colormix'] = [0.0, 1.0] # a^4
+    p['prior']['g.S_colormix'] = [0.0, 10.0]
+    p['prior']['c.S_colormix'] = [0.0, 10.0] # m^2
+    p['prior']['a.S_colormix'] = [0.0, 10.0] # a^2
+    p['prior']['m.S_colormix'] = [0.0, 1.0] # a^2 m^2
+    p['prior']['d.S_colormix'] = [0.0, 1.0] # m^4
+    p['prior']['b.S_colormix'] = [0.0, 1.0] # a^4
     # read gV indices
     gVidx = yaml.load(open('./params.yml'))
     p['gVidx'] = dict(gVidx['ensembles'])
@@ -82,8 +83,8 @@ def params():
 def login(nerscusr,sqlusr,pwd):
     #subprocess.call('ssh -fCN %s@edison.nersc.gov -o TCPKeepAlive=yes -L 5555:scidb1.nersc.gov:5432' %(nerscusr), shell=True)
     hostname='localhost'
-    databasename='callat'
-    portnumber='5432'
+    databasename='c51_project2'
+    portnumber='5555'
     try:
         conn = psql.connect(host=hostname, port=portnumber, database=databasename, user=sqlusr, password=pwd)
         cur = conn.cursor()
@@ -96,7 +97,6 @@ def login(nerscusr,sqlusr,pwd):
         print e
         print e.pgcode
         print e.pgerror
-        print traceback.format_exc()
         print "exiting"
         raise SystemExit
 
@@ -142,10 +142,12 @@ def read_data(cur,conn,params):
     ens_list = params['ens']
     fit_n = params['fit_n']
     op_list = params['op']
+    version = params['version']
     edata = []
     xlist = []
     mpiL = dict()
     mmaL = dict()
+    count = 0
     # read data
     for ens in ens_list:
         # a/w0
@@ -161,17 +163,19 @@ def read_data(cur,conn,params):
         etemp = [] # temp epi
         mtemp = [] # temp ema
         rtemp = [] # temp rma
-        xtemp = [] # temp mpi
+        ftemp = [] # temp fpi
         for n in fit_n:
             # get L
             sql_cmd = "SELECT nl::integer FROM callat_corr.hisq_ensembles WHERE tag='%s';" %ens
             cur.execute(sql_cmd)
             nl = cur.fetchone()[0]
             # get epi
-            sql_cmd = "SELECT result::double precision FROM callat_proj.n0bb_v1 WHERE hisq_ensembles='%s' AND operator='epi' and fit_n=%s ORDER BY nbs;" %(ens,n)
+            sql_cmd = "SELECT result::double precision FROM callat_proj.n0bb_v%s WHERE hisq_ensembles='%s' AND operator='epi' and fit_n=%s ORDER BY nbs;" %(version,ens,n)
             cur.execute(sql_cmd)
             temp = cur.fetchall()
             etemp.append(np.array([i[0] for i in temp]))
+            # get fpi
+
             # get ema
             if ens in ['l2464f211b600m00507m0507m628','l4064f211b600m00507m0507m628']:
                 ens_ma = 'l3264f211b600m00507m0507m628'
@@ -181,24 +185,24 @@ def read_data(cur,conn,params):
             cur.execute(sql_cmd)
             temp = cur.fetchall()
             e0ma = np.array([i[0] for i in temp])
-            sql_cmd = """SELECT "e0"::double precision FROM callat_proj.github_fkfpi_pion_v1 WHERE ensemble='%s' ORDER by nbs;""" %(ens)
-            cur.execute(sql_cmd)
-            temp = cur.fetchall()
-            e0 = np.array([i[0] for i in temp])
-            xtemp.append(e0)
-            sql_cmd = """SELECT "z0p"::double precision FROM callat_proj.github_fkfpi_pion_v1 WHERE ensemble='%s' ORDER BY nbs;""" %(ens)
-            cur.execute(sql_cmd)
-            temp = cur.fetchall()
-            z0p = np.array([i[0] for i in temp])
-            sql_cmd = """SELECT "mq1"::double precision FROM callat_proj.github_fkfpi_pion_v1 WHERE ensemble='%s' ORDER BY nbs;""" %(ens)
-            cur.execute(sql_cmd)
-            temp = cur.fetchall()
-            mq1 = np.array([i[0] for i in temp])
-            sql_cmd = """SELECT "mres"::double precision FROM callat_proj.github_fkfpi_mresl_v1 WHERE ensemble='%s' ORDER BY nbs;""" %(ens)
-            cur.execute(sql_cmd)
-            temp = cur.fetchall()
-            mresl = np.array([i[0] for i in temp])
-            Fpi = z0p*2.*(mq1+mresl)/e0**(3./2.)
+            #sql_cmd = """SELECT "e0"::double precision FROM callat_proj.github_fkfpi_pion_v1 WHERE ensemble='%s' ORDER by nbs;""" %(ens)
+            #cur.execute(sql_cmd)
+            #temp = cur.fetchall()
+            #e0 = np.array([i[0] for i in temp])
+            #xtemp.append(e0)
+            #sql_cmd = """SELECT "z0p"::double precision FROM callat_proj.github_fkfpi_pion_v1 WHERE ensemble='%s' ORDER BY nbs;""" %(ens)
+            #cur.execute(sql_cmd)
+            #temp = cur.fetchall()
+            #z0p = np.array([i[0] for i in temp])
+            #sql_cmd = """SELECT "mq1"::double precision FROM callat_proj.github_fkfpi_pion_v1 WHERE ensemble='%s' ORDER BY nbs;""" %(ens)
+            #cur.execute(sql_cmd)
+            #temp = cur.fetchall()
+            #mq1 = np.array([i[0] for i in temp])
+            #sql_cmd = """SELECT "mres"::double precision FROM callat_proj.github_fkfpi_mresl_v1 WHERE ensemble='%s' ORDER BY nbs;""" %(ens)
+            #cur.execute(sql_cmd)
+            #temp = cur.fetchall()
+            #mresl = np.array([i[0] for i in temp])
+            #Fpi = z0p*2.*(mq1+mresl)/e0**(3./2.)
             ema = e0ma/(4.*np.pi*Fpi)
             mtemp.append(ema)
             rma = (e0ma/e0)**2
@@ -207,11 +211,13 @@ def read_data(cur,conn,params):
             mmaL[ens] = e0ma[0]*nl
             for o in op_list:
                 # get pi+ to pi- ME
-                sql_cmd = "SELECT result::double precision FROM callat_proj.n0bb_v1 WHERE hisq_ensembles='%s' AND operator='%s' and fit_n=%s ORDER BY nbs;" %(ens,o,n)
+                sql_cmd = "SELECT result::double precision FROM callat_proj.n0bb_v%s WHERE hisq_ensembles='%s' AND operator='%s' and fit_n=%s ORDER BY nbs;" %(version,ens,o,n)
                 cur.execute(sql_cmd)
                 temp = cur.fetchall()
                 otemp.append(np.array([i[0]/(aw0**4) for i in temp])) # convert matrix element to w0 units
                 xlist.append({'tag':ens,'op':o,'n':n,'aw0':aw0,'gV':gV})
+                print count, ens, o
+                count += 1
         # apply renorm here on otemp
         # get mq
         sql_cmd = "SELECT mval FROM callat_proj.project_ga_v1_boot0 WHERE id=%s;" %(params['gVidx'][ens]['idx']['fh'])
@@ -346,8 +352,6 @@ class fit_functions():
         fit += epi**4*p['c.V']
         # a^2 m^2
         fit += epi**2 * xi['aw0']**2 * p['m.V']
-        # a^4
-        fit += xi['aw0']**4 * p['a.V']
         return fit
     def u_LRS(self,xi,p,epi):
         # LO + NLO log
@@ -357,11 +361,11 @@ class fit_functions():
         # NLO discretization
         fit += xi['aw0']**2*p['a.%s' %xi['op']]
         # a^2 m^2
-        fit += epi**2 * xi['aw0']**2 * p['m.%s' %xi['op']]
+        #fit += epi**2 * xi['aw0']**2 * p['m.%s' %xi['op']]
         # a^4
-        fit += xi['aw0']**4 * p['b.%s' %xi['op']]
+        #fit += xi['aw0']**4 * p['b.%s' %xi['op']]
         # m^4
-        fit += epi**4 * p['d.%s' %xi['op']]
+        #fit += epi**4 * p['d.%s' %xi['op']]
         return fit
     def ma_unitary(self,x,p):
         fit = []
@@ -381,24 +385,23 @@ class fit_functions():
     def ma_u_V(self,xi,p,epi,ema,rma):
         r = (4.*np.pi*epi)**2*p['g.V']*( 1-8./3.*epi**2*( 0.25*self.fv_logs('epi',xi,p)+0.75*rma*self.fv_logs('ema',xi,p) ) )
         r += epi**4*p['c.V']
-        r += xi['aw0']**4 * p['a.V'] # a^4
         r += epi**2 * xi['aw0']**2 * p['m.V'] # a^2 m^2
         return r
     def ma_u_LR(self,xi,p,epi,ema,rma):
         r = p['g.%s' %xi['op']]*( 1-5./3.*epi**2*( -1./5.*self.fv_logs('epi',xi,p)+6./5.*rma*self.fv_logs('ema',xi,p) ) )
         r += epi**2*p['c.%s' %xi['op']]
         r += xi['aw0']**2*p['a.%s' %xi['op']]
-        r += epi**2 * xi['aw0']**2 * p['m.%s' %xi['op']]
-        r += xi['aw0']**4 * p['b.%s' %xi['op']]
-        r += epi**4 * p['d.%s' %xi['op']]
+        #r += epi**2 * xi['aw0']**2 * p['m.%s' %xi['op']]
+        #r += xi['aw0']**4 * p['b.%s' %xi['op']]
+        #r += epi**4 * p['d.%s' %xi['op']]
         return r
     def ma_u_S(self,xi,p,epi,ema,rma,ri):
         r = p['g.%s' %xi['op']]* (1.-5./3.*epi**2* (-1./5.*self.fv_logs('epi',xi,p) + 6./5.*rma*self.fv_logs('ema',xi,p) + 6./5.*ri*self.k0_log(xi,p) ) )
         r += epi**2*p['c.%s' %xi['op']]
         r += xi['aw0']**2*p['a.%s' %xi['op']]
-        r += epi**2 * xi['aw0']**2 * p['m.%s' %xi['op']]
-        r += xi['aw0']**4 * p['b.%s' %xi['op']]
-        r += epi**4 * p['d.%s' %xi['op']]
+        #r += epi**2 * xi['aw0']**2 * p['m.%s' %xi['op']]
+        #r += xi['aw0']**4 * p['b.%s' %xi['op']]
+        #r += epi**4 * p['d.%s' %xi['op']]
         return r
     def ma_reformat(self,x,p):
         fit = []
@@ -422,7 +425,7 @@ class fit_functions():
         r = p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * epi**2 * (1. + 2.*ema**2*self.fv_logs('ema',xi,p) - 2./3.*epi**2*self.fv_logs('epi',xi,p))
         r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * epi**4 * p['c.%s' %xi['op']] # m^4
         r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * epi**2 * xi['aw0']**2 * p['m.%s' %xi['op']] # m^2 a^2
-        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * xi['aw0']**4 * p['m.%s' %xi['op']] # a^4
+        #r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * xi['aw0']**4 * p['m.%s' %xi['op']] # a^4
         return r
     def ma_reform_u_LR(self,xi,p,epi,ema,Lambda):
         r = p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * (1. + 2.*ema**2*self.fv_logs('ema',xi,p) + 1./3.*epi**2*self.fv_logs('epi',xi,p))
@@ -459,7 +462,7 @@ class fit_functions():
         r = p['g.%s' %xi['op']]*Lambda**4*epi**2/(4.*np.pi)**2 * (1. + 4./3.*epi**2*self.fv_logs('epi',xi,p))
         r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * epi**4 * p['c.%s' %xi['op']] # m^4
         r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * epi**2 * xi['aw0']**2 * p['m.%s' %xi['op']] # m^2 a^2
-        r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * xi['aw0']**4 * p['m.%s' %xi['op']] # a^4
+        #r += p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * xi['aw0']**4 * p['m.%s' %xi['op']] # a^4
         return r
     def reform_u_LRS(self,xi,p,epi,Lambda):
         r = p['g.%s' %xi['op']]*Lambda**4/(4.*np.pi)**2 * (1. + 7./3.*epi**2*self.fv_logs('epi',xi,p))
@@ -483,7 +486,7 @@ def fit_data(x,y,p):
     p['ma']['mpiL'] = y['mmaL']
     fitc = fit_functions(fv=p['fv'],ma=p['ma'])
     fit = lsqfit.nonlinear_fit(data=(x,y['y']),prior=prior,fcn=fitc.fit_switch,maxit=1000000)
-    print fit
+    print fit.format('v')
     return {'fit': fit, 'prior': prior, 'fitc': fitc}
 
 def phys_point(p,result):
@@ -698,7 +701,7 @@ if __name__=="__main__":
     # ma flags: True, False, 'reformat', 'xreformat'
     p = params()
     p['fv'] = {'flag': True}
-    p['ma'] = {'flag': True}
+    p['ma'] = {'flag': False}
     x,y = read_data(cur,conn,p)
     result = fit_data(x,y,p)
     phys_point(p,result)

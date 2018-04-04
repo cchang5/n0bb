@@ -44,7 +44,7 @@ if __name__=='__main__':
     psqlpwd = pwd.passwd()
     cur, conn = login('cchang5','cchang5',psqlpwd)
     # matrix elements
-    if True:
+    if False:
         files = ['./l1648/l1648mpi310_fix_rat.dat','./l2448/l2448mpi220_fix_rat.dat','./l2464mpi220/l2464mpi220_fix_rat.dat','./l2464mpi310/l2464mpi310_fix_rat.dat','./l3248/l3248mpi135_fix_rat.dat','./l3264/l3264mpi220_fix_rat.dat','./l3296/l3296mpi310_fix_rat.dat','./l4064/l4064mpi220_fix_rat.dat','./l4864/l4864mpi135_fix_rat.dat','./l4896/l4896mpi220_fix_rat.dat']
         ens_list = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828','l2464f211b600m00507m0507m628','l2464f211b600m0102m0509m635','l3248f211b580m00235m0647m831','l3264f211b600m00507m0507m628','l3296f211b630m0074m037m440','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628','l4896f211b630m00363m0363m430']
         for idx, f in enumerate(files):
@@ -73,14 +73,39 @@ if __name__=='__main__':
                             cur.execute(sqlcmd)
                             conn.commit()
     # epsilon pi
-    if True:
-        files = ['./l1648/l1648mpi310_eps.dat','./l2448/l2448mpi220_eps.dat','./l2464mpi220/l2464mpi220_eps.dat','./l2464mpi310/l2464mpi310_eps.dat','./l3248/l3248mpi135_eps.dat','./l3264/l3264mpi220_eps.dat','./l3296/l3296mpi310_eps.dat','./l4064/l4064mpi220_eps.dat','./l4864/l4864mpi135_eps.dat','./l4896/l4896mpi220_eps.dat']
-        ens_list = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828','l2464f211b600m00507m0507m628','l2464f211b600m0102m0509m635','l3248f211b580m00235m0647m831','l3264f211b600m00507m0507m628','l3296f211b630m0074m037m440','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628','l4896f211b630m00363m0363m430']
+    if False:
+        files = ['./data_v2/l1648_eps.dat','./data_v2/l2448_eps.dat','./data_v2/l2464_220_eps.dat','./data_v2/l2464_310_eps.dat','./data_v2/l3264_eps.dat','./data_v2/l3296_eps.dat','./data_v2/l4064_eps.dat','./data_v2/l4864_eps.dat','./data_v2/l4896_eps.dat']
+        ens_list = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828','l2464f211b600m00507m0507m628','l2464f211b600m0102m0509m635','l3264f211b600m00507m0507m628','l3296f211b630m0074m037m440','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628','l4896f211b630m00363m0363m430']
         for idx, f in enumerate(files):
             ens = ens_list[idx]
             print ens, f
             with open(f,'r') as d:
                 op = 'epi'
+                mean = []
+                for nbs,l in tqdm.tqdm(enumerate(d)):
+                    temp = l.split(',')
+                    mean_n = []
+                    for fit_n,t in enumerate(temp):
+                        data = float(t.replace('\n',''))
+                        mean_n.append(data)
+                        sqlcmd = "SELECT callat_fcn.upsert($$INSERT INTO callat_proj.n0bb_v2 (hisq_ensembles, operator, nbs, fit_n, result) VALUES ('%s','%s',%s,%s,%s)$$);" %(ens,op,nbs+1,fit_n,data)
+                        cur.execute(sqlcmd)
+                        conn.commit()
+                    mean.append(mean_n)
+                boot0 = np.mean(mean,axis=0)
+                for fit_n,data in enumerate(boot0):
+                    sqlcmd = "SELECT callat_fcn.upsert($$INSERT INTO callat_proj.n0bb_v2 (hisq_ensembles, operator, nbs, fit_n, result) VALUES ('%s','%s',%s,%s,%s)$$);" %(ens,op,0,fit_n,data)
+                    cur.execute(sqlcmd)
+                    conn.commit()
+    # fpi
+    if True:
+        files = ['./data_v1/l1648_fpi_old.dat','./data_v1/l2448_fpi_old.dat','./data_v1/l2464_220_fpi_old.dat','./data_v1/l2464_310_fpi_old.dat','./data_v1/l3264_fpi_old.dat','./data_v1/l3296_fpi_old.dat','./data_v1/l4064_fpi_old.dat','./data_v1/l4864_fpi_old.dat','./data_v1/l4896_fpi_old.dat']
+        ens_list = ['l1648f211b580m013m065m838','l2448f211b580m0064m0640m828','l2464f211b600m00507m0507m628','l2464f211b600m0102m0509m635','l3264f211b600m00507m0507m628','l3296f211b630m0074m037m440','l4064f211b600m00507m0507m628','l4864f211b600m00184m0507m628','l4896f211b630m00363m0363m430']
+        for idx, f in enumerate(files):
+            ens = ens_list[idx]
+            print ens, f
+            with open(f,'r') as d:
+                op = 'fpi'
                 mean = []
                 for nbs,l in tqdm.tqdm(enumerate(d)):
                     temp = l.split(',')
@@ -97,3 +122,4 @@ if __name__=='__main__':
                     sqlcmd = "SELECT callat_fcn.upsert($$INSERT INTO callat_proj.n0bb_v1 (hisq_ensembles, operator, nbs, fit_n, result) VALUES ('%s','%s',%s,%s,%s)$$);" %(ens,op,0,fit_n,data)
                     cur.execute(sqlcmd)
                     conn.commit()
+
